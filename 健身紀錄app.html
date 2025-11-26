@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>健身紀錄 V7 (歷史回顧)</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1C1C1E;
+            --primary: #0A84FF;
+            --accent: #30D158;
+            --danger: #FF453A;
+            --text-main: #FFFFFF;
+            --text-sub: #8E8E93;
+            --border: #38383A;
+            --input-bg: #2C2C2E;
+            --nav-bg: #161616;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+            padding-bottom: 100px; /* 留給底部導航 */
+        }
+
+        /* 隱藏/顯示頁面的機制 */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* 標題區塊 */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 22px; margin: 0; color: var(--text-main); letter-spacing: 1px;}
+        .fix-btn {
+            position: absolute;
+            right: 0;
+            background: #333;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* 卡片通用樣式 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        /* 輸入框樣式 */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+        
+        input, select {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            background: var(--input-bg);
+            color: white;
+            appearance: none;
+            outline: none;
+        }
+        
+        select {
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007AFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+        }
+        
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .row { display: flex; gap: 12px; }
+        .col { flex: 1; }
+        
+        .exercise-select-row { display: flex; gap: 10px; }
+        .add-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--primary);
+            width: 50px;
+            font-size: 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 按鈕樣式 */
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-primary:active { opacity: 0.7; }
+
+        .btn-finish {
+            background-color: var(--accent);
+            color: black;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3);
+        }
+
+        /* 列表項目樣式 */
+        .history-item {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-info { flex: 1; }
+        .history-main { font-weight: 500; font-size: 17px; }
+        .history-sub { font-size: 13px; color: var(--text-sub); margin-top: 4px;}
+        .history-right { display: flex; align-items: center; gap: 15px; }
+        .history-val { font-size: 18px; font-weight: bold; color: var(--accent); }
+        
+        .delete-btn {
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--danger);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* 歷史頁面專用樣式 */
+        .date-section {
+            margin-bottom: 25px;
+        }
+        .date-header {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            padding-left: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .volume-badge {
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        .ghost-text {
+            font-size: 13px;
+            color: var(--primary);
+            margin-top: -10px;
+            margin-bottom: 12px;
+            height: 18px;
+            font-weight: 500;
+        }
+
+        .rest-input-container {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .rest-label { font-size: 14px; color: var(--text-sub); width: 80px; }
+        .rest-input { text-align: center; font-weight: bold; color: var(--accent); padding: 8px !important; }
+
+        /* 底部導航列 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: var(--nav-bg);
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 900;
+            padding-bottom: 10px; /* iPhone Home Bar 避讓 */
+            box-sizing: border-box;
+        }
+        .nav-item {
+            color: #555;
+            font-size: 12px;
+            text-align: center;
+            width: 50%;
+            cursor: pointer;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+
+        /* 計時器 */
+        #timer-modal {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background: #000;
+            border-top: 1px solid #333;
+            padding: 30px 20px 50px 20px;
+            border-radius: 20px 20px 0 0;
+            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-sizing: border-box;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        #timer-modal.active { bottom: 0; }
+        .timer-display { font-size: 60px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 20px 0; color: var(--accent); }
+        .timer-btn { background: #333; color: white; border: none; padding: 12px 24px; border-radius: 25px; margin: 0 5px; font-size: 16px; }
+        .close-timer { position: absolute; top: 20px; right: 20px; font-size: 24px; color: var(--text-sub); padding: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 頁面 1：訓練輸入 -->
+    <div id="page-workout" class="page active">
+        <div class="header">
+            <h1>💪 WORKOUT</h1>
+            <button class="fix-btn" onclick="forceReset()" title="修復選單">🔄</button>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <label>今天練哪裡？</label>
+                <select id="partSelect" onchange="loadExercises()">
+                    <option value="胸">胸 (Chest)</option>
+                    <option value="背">背 (Back)</option>
+                    <option value="肩">肩 (Shoulders)</option>
+                    <option value="腿">腿 (Legs)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>選擇動作</label>
+                <div class="exercise-select-row">
+                    <select id="exerciseSelect" onchange="handleExerciseChange()">
+                        <!-- 選單自動產生 -->
+                    </select>
+                    <button class="add-btn" onclick="addNewExercise()">+</button>
+                </div>
+            </div>
+
+            <div class="ghost-text" id="lastRecordHint"></div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="input-group">
+                        <label>重量 (kg)</label>
+                        <input type="number" id="weight" inputmode="decimal" placeholder="0">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="input-group">
+                        <label>次數 (Reps)</label>
+                        <input type="number" id="reps" inputmode="numeric" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="rest-input-container">
+                <div class="rest-label">⏱ 休息(秒)</div>
+                <input type="number" id="restTimeInput" class="rest-input" inputmode="numeric" value="90">
+                <div style="font-size:12px; color:#555;">(記憶)</div>
+            </div>
+            
+            <button class="btn-primary" onclick="saveLog()">完成 ✓</button>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0; font-size:16px; color:var(--text-sub);">今日列表</h3>
+                <span onclick="clearToday()" style="color:#FF453A; font-size:12px; padding:5px; cursor:pointer;">重置今日</span>
+            </div>
+            <div id="todayList"></div>
+        </div>
+
+        <button class="btn-finish" onclick="finishWorkout()">🎉 結束今日訓練</button>
+
+        <!-- 底部空間 -->
+        <div style="height: 50px;"></div>
+    </div>
+
+    <!-- 頁面 2：歷史紀錄 -->
+    <div id="page-history" class="page">
+        <div class="header">
+            <h1>📅 歷史紀錄</h1>
+        </div>
+        
+        <div id="historyListContainer" style="padding-bottom: 20px;">
+            <!-- 歷史紀錄會插在這裡 -->
+        </div>
+    </div>
+
+    <!-- 底部導航 -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('workout')" id="nav-workout">
+            <span class="nav-icon">🏋️</span>
+            訓練
+        </div>
+        <div class="nav-item" onclick="switchTab('history')" id="nav-history">
+            <span class="nav-icon">📅</span>
+            紀錄
+        </div>
+    </div>
+
+    <!-- 計時器 -->
+    <div id="timer-modal">
+        <div class="close-timer" onclick="hideTimer()">✕</div>
+        <div style="color:#888; font-size:14px;">REST TIME</div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div>
+            <button class="timer-btn" onclick="adjustTimer(-10)">-10</button>
+            <button class="timer-btn" onclick="adjustTimer(10)">+10</button>
+            <button class="timer-btn" onclick="resetTimer()">重置</button>
+        </div>
+    </div>
+
+    <script>
+        const defaultData = {
+            "胸": ["史密斯臥推", "啞鈴臥推", "史密斯上胸臥推", "上胸啞鈴臥推", "cable夾胸", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
+            "背": ["引體向上", "滑輪下拉", "坐姿划船", "分動式下拉", "後三角飛鳥", "垂式彎舉", "二頭彎舉", "cable二頭彎舉", "W槓彎舉", "器械二頭彎舉"],
+            "肩": ["槓鈴肩推", "啞鈴肩推", "啞鈴側平舉", "cable側平舉", "cable前平舉", "後三角飛鳥", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
+            "腿": ["深蹲", "史密斯深蹲", "器械腿推", "腿伸展", "腿後勾"],
+        };
+
+        let exerciseDB;
+        let logs = JSON.parse(localStorage.getItem('gymLogs')) || [];
+        let restDB = JSON.parse(localStorage.getItem('restDB')) || {};
+
+        // --- 初始化與資料庫修復 ---
+        function initDB() {
+            let saved;
+            try { saved = JSON.parse(localStorage.getItem('exerciseDB')); } catch(e) { saved = null; }
+
+            if (!saved || typeof saved !== 'object' || Array.isArray(saved)) {
+                const newData = JSON.parse(JSON.stringify(defaultData));
+                localStorage.setItem('exerciseDB', JSON.stringify(newData));
+                return newData;
+            }
+
+            let isFixed = false;
+            for (let key in defaultData) {
+                if (!saved[key] || !Array.isArray(saved[key]) || saved[key].length === 0) {
+                    saved[key] = defaultData[key];
+                    isFixed = true;
+                }
+            }
+            if (isFixed) localStorage.setItem('exerciseDB', JSON.stringify(saved));
+            return saved;
+        }
+
+        function forceReset() {
+            if(confirm("選單看不到嗎？按「確定」將強制重置選單 (不會刪除紀錄)。")) {
+                localStorage.removeItem('exerciseDB');
+                exerciseDB = initDB();
+                loadExercises();
+                alert("已修復完成！");
+            }
+        }
+
+        window.onload = function() {
+            exerciseDB = initDB(); 
+            loadExercises();       
+            renderTodayLogs();
+            renderHistoryLogs();
+        };
+
+        // --- 頁面切換 ---
+        function switchTab(tab) {
+            document.getElementById('page-workout').classList.remove('active');
+            document.getElementById('page-history').classList.remove('active');
+            document.getElementById('nav-workout').classList.remove('active');
+            document.getElementById('nav-history').classList.remove('active');
+
+            document.getElementById('page-' + tab).classList.add('active');
+            document.getElementById('nav-' + tab).classList.add('active');
+
+            if (tab === 'history') {
+                renderHistoryLogs(); // 切換過去時更新一下
+            }
+        }
+
+        function finishWorkout() {
+            const today = new Date().toLocaleDateString();
+            const todayCount = logs.filter(l => l.date === today).length;
+            
+            if (todayCount === 0) {
+                alert("今天還沒訓練喔，快去舉幾下！");
+                return;
+            }
+
+            alert(`辛苦了！今天完成了 ${todayCount} 組訓練！🎉`);
+            switchTab('history'); // 跳轉到歷史頁面
+        }
+
+        // --- 動作與輸入邏輯 ---
+        function loadExercises() {
+            const part = document.getElementById('partSelect').value;
+            let list = exerciseDB[part];
+            // 防呆
+            if (!list || list.length === 0) {
+                list = defaultData[part];
+                exerciseDB[part] = list;
+            }
+            const select = document.getElementById('exerciseSelect');
+            select.innerHTML = ""; 
+            list.forEach(ex => {
+                const opt = document.createElement('option');
+                opt.value = ex;
+                opt.textContent = ex;
+                select.appendChild(opt);
+            });
+            handleExerciseChange();
+        }
+
+        function handleExerciseChange() {
+            checkHistory();
+            const name = document.getElementById('exerciseSelect').value;
+            const savedTime = restDB[name] || 90;
+            document.getElementById('restTimeInput').value = savedTime;
+        }
+
+        function addNewExercise() {
+            const part = document.getElementById('partSelect').value;
+            const newEx = prompt(`新增動作到「${part}」類別：`);
+            if (newEx) {
+                if (!exerciseDB[part]) exerciseDB[part] = [];
+                exerciseDB[part].push(newEx);
+                localStorage.setItem('exerciseDB', JSON.stringify(exerciseDB));
+                loadExercises();
+                document.getElementById('exerciseSelect').value = newEx;
+                handleExerciseChange();
+            }
+        }
+
+        function checkHistory() {
+            const name = document.getElementById('exerciseSelect').value;
+            const hint = document.getElementById('lastRecordHint');
+            if (!name) { hint.textContent = ""; return; }
+            
+            // 找出過去的紀錄 (排除今天的，如果你希望今天也算最新，就拿掉filter)
+            // 這裡邏輯：顯示最新的紀錄，不管是不是今天的
+            const history = logs.filter(l => l.name === name);
+            if (history.length > 0) {
+                const last = history[0]; 
+                hint.innerHTML = `上次：<span style="color:#fff">${last.weight}kg</span> × ${last.reps}`;
+            } else {
+                hint.textContent = "New PR waiting...";
+            }
+        }
+
+        function saveLog() {
+            const part = document.getElementById('partSelect').value;
+            const name = document.getElementById('exerciseSelect').value;
+            const weight = document.getElementById('weight').value;
+            const reps = document.getElementById('reps').value;
+            const restTime = parseInt(document.getElementById('restTimeInput').value) || 90;
+
+            if (!weight || !reps) { alert('請輸入重量與下數'); return; }
+
+            const newLog = {
+                id: Date.now(),
+                part: part,
+                name: name,
+                weight: weight,
+                reps: reps,
+                date: new Date().toLocaleDateString()
+            };
+            
+            logs.unshift(newLog); 
+            localStorage.setItem('gymLogs', JSON.stringify(logs));
+
+            restDB[name] = restTime;
+            localStorage.setItem('restDB', JSON.stringify(restDB));
+
+            renderTodayLogs();
+            checkHistory();
+            startTimer(restTime);
+        }
+
+        function deleteLog(id) {
+            if(!confirm('確定刪除這筆紀錄？')) return;
+            logs = logs.filter(log => log.id !== id);
+            localStorage.setItem('gymLogs', JSON.stringify(logs));
+            renderTodayLogs();
+            renderHistoryLogs(); // 同步更新歷史頁
+            checkHistory();
+        }
+
+        // --- 顯示邏輯：今日列表 ---
+        function renderTodayLogs() {
+            const list = document.getElementById('todayList');
+            const today = new Date().toLocaleDateString();
+            const todayLogs = logs.filter(l => l.date === today);
+
+            if (todayLogs.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:14px;">Let\'s go! 開始訓練</div>';
+                return;
+            }
+
+            list.innerHTML = todayLogs.map(log => createLogHTML(log, true)).join('');
+        }
+
+        function clearToday() {
+            if (confirm('確定清除今日所有紀錄？')) {
+                const today = new Date().toLocaleDateString();
+                logs = logs.filter(l => l.date !== today);
+                localStorage.setItem('gymLogs', JSON.stringify(logs));
+                renderTodayLogs();
+                checkHistory();
+            }
+        }
+
+        // --- 顯示邏輯：歷史頁面 (日期分組) ---
+        function renderHistoryLogs() {
+            const container = document.getElementById('historyListContainer');
+            if (logs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:#555;">尚未有歷史紀錄</div>';
+                return;
+            }
+
+            // 1. 依照日期分組
+            const grouped = {};
+            logs.forEach(log => {
+                if (!grouped[log.date]) grouped[log.date] = [];
+                grouped[log.date].push(log);
+            });
+
+            // 2. 排序日期 (最新的在前面)
+            // 因為 date string 格式不一定好排序，這裡用簡單的 string 比較 (2023/11/26 > 2023/11/25)
+            // 如果跨年份格式不同可能需要轉 Date 物件，這裡假設toLocaleDateString格式一致
+            const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+            // 3. 產生 HTML
+            let html = '';
+            sortedDates.forEach(date => {
+                const dayLogs = grouped[date];
+                const isToday = date === new Date().toLocaleDateString();
+                const displayDate = isToday ? `${date} (今日)` : date;
+                
+                html += `
+                    <div class="card date-section">
+                        <div class="date-header">
+                            <span>${displayDate}</span>
+                            <span class="volume-badge">共 ${dayLogs.length} 組</span>
+                        </div>
+                        ${dayLogs.map(log => createLogHTML(log, false)).join('')}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 通用的 HTML 產生器
+        function createLogHTML(log, showDelete) {
+            const deleteBtn = showDelete ? 
+                `<button class="delete-btn" onclick="deleteLog(${log.id})">✕</button>` : '';
+            
+            return `
+                <div class="history-item">
+                    <div class="history-info">
+                        <div class="history-main">${log.name}</div>
+                        <div class="history-sub">${log.part}</div>
+                    </div>
+                    <div class="history-right">
+                        <div class="history-val">
+                            ${log.weight}<span style="font-size:12px; color:#888;">kg</span> 
+                            <span style="color:#555">×</span> 
+                            ${log.reps}
+                        </div>
+                        ${deleteBtn}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 計時器邏輯 ---
+        let timerInterval;
+        let secondsLeft = 0;
+        let currentDefault = 90;
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            secondsLeft = seconds;
+            currentDefault = seconds;
+            updateDisplay();
+            document.getElementById('timer-modal').classList.add('active');
+            
+            timerInterval = setInterval(() => {
+                secondsLeft--;
+                updateDisplay();
+                if (secondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    hideTimer();
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+            const s = (secondsLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+        }
+
+        function adjustTimer(val) {
+            secondsLeft += val;
+            if (secondsLeft < 0) secondsLeft = 0;
+            updateDisplay();
+        }
+
+        function resetTimer() {
+            secondsLeft = currentDefault;
+            updateDisplay();
+        }
+
+        function hideTimer() {
+            document.getElementById('timer-modal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
