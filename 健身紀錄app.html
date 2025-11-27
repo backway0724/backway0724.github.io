@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>健身紀錄 V9 (通知版)</title>
+    <title>健身紀錄 V10 (防休眠版)</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -187,7 +187,6 @@
             cursor: pointer;
         }
         
-        /* 新增：通知按鈕 */
         .notify-btn {
             background: #FF9500;
             color: white;
@@ -198,7 +197,7 @@
             margin-bottom: 15px;
             font-size: 14px;
             cursor: pointer;
-            display: none; /* 預設隱藏，如果沒權限才顯示 */
+            display: none;
         }
 
         #timer-modal {
@@ -213,6 +212,11 @@
         .timer-display { font-size: 60px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 20px 0; color: var(--accent); }
         .timer-btn { background: #333; color: white; border: none; padding: 12px 24px; border-radius: 25px; margin: 0 5px; font-size: 16px; }
         .close-timer { position: absolute; top: 20px; right: 20px; font-size: 24px; color: var(--text-sub); padding: 10px; }
+        
+        /* 隱藏的影片播放器，用於防休眠 */
+        #wakeLockVideo {
+            width: 1px; height: 1px; opacity: 0; position: absolute; top: 0; left: 0; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -223,8 +227,12 @@
             <button class="fix-btn" onclick="forceReset()" title="修復選單">🔄</button>
         </div>
         
-        <!-- 通知授權按鈕 -->
-        <button id="enableNotifyBtn" class="notify-btn" onclick="requestNotifyPermission()">🔔 點此啟用計時通知與音效</button>
+        <button id="enableNotifyBtn" class="notify-btn" onclick="requestNotifyPermission()">🔔 點此啟用計時通知與防休眠</button>
+
+        <!-- 防休眠影片 Hack -->
+        <video id="wakeLockVideo" loop playsinline muted>
+            <source src="data:video/mp4;base64,AAAAHGZ0eXBNNGEgAAAAAE00QSAgMQAAAAAAHgAAAC5tb292AAAAbG12aGQAAAAAzaNnZM2jZ2QAAQAAAQAAAAAAAAAAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhdHJhawAAAFx0a2hkAAAAAdmjZ2TNo2dkAAAAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAAQAAAAABAAAAAAABAAAAAAhobWRoZAABAAAAAAACLP5oZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAQlBQUAAAAAAxAAAACG1pbmYAAAAQc21oZAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABVHN0YmwAAABTc3RzZAAAAAAAAAABAAAAR21wNGEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAEAAAAAEAAQAAAAAAAAAAAAAAH3R0c2MAAAAAAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAQc3RzeHXXXXXXXXXXAAACAAAAABhzdHN6AAAAAAAAAAAAAAABAAAAAgAAABRzdGNvAAAAAAAAAAEAAAQwAAAAYXVkdGEAAAA1bWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpYQAAAAAAAAAAAAAAAAAAAAA6aWxzdAAAACWpdG9vAAAAHWRhdGEAAAAAQW5kcm9pZCBWZXJzaW9uIDEyAA==" type="video/mp4">
+        </video>
 
         <div class="card">
             <div class="input-group">
@@ -314,41 +322,65 @@
             <button class="timer-btn" onclick="adjustTimer(10)">+10</button>
             <button class="timer-btn" onclick="resetTimer()">重置</button>
         </div>
+        <div style="margin-top:15px; font-size:12px; color:#555;">(螢幕將保持恆亮以利通知)</div>
     </div>
 
     <script>
-        // --- 音效與通知系統 ---
-        // 內嵌一個短的 "Ding" 音效 (Base64)
         const dingSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbQAAAA8AAAAEAAABvwAVFhcYGRscHR8gISIkJiYoKSstLi8wMjM0Njc4OTs8PT9AQUNERkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f4AAAAATGF2YzU4LjU0LjEwMAAAAAAAAAAAAAAA//uQZAAABi0vXuYQwAAAAANIAAAABO1F3mU8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABh0vW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABF0vXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABi0vW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAACBERF3mU8wAAAA0gAAAAEZUXeZTzAAAADSAAAAQAAAGkAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/8zEAAAAA1QAAAAEAAAAB");
-        
+        const video = document.getElementById("wakeLockVideo");
+
+        // 檢查權限
         function checkNotifyPermission() {
-            if ("Notification" in window) {
-                if (Notification.permission === 'default') {
-                    document.getElementById('enableNotifyBtn').style.display = 'block';
-                }
+            if ("Notification" in window && Notification.permission === 'default') {
+                document.getElementById('enableNotifyBtn').style.display = 'block';
             }
         }
 
+        // 請求通知與初始化音效
         function requestNotifyPermission() {
-            // 嘗試播放一次聲音以「解鎖」iOS 自動播放限制
+            // 初始化音效 (解除 iOS 自動播放限制)
             dingSound.volume = 0.1;
             dingSound.play().then(() => {
                 dingSound.pause();
                 dingSound.currentTime = 0;
-                dingSound.volume = 1.0;
-            }).catch(e => console.log("Audio unlock failed", e));
+            }).catch(e => console.log("Audio init fail", e));
+
+            // 初始化防休眠影片
+            video.play().then(() => {
+                video.pause();
+            }).catch(e => console.log("Video init fail", e));
 
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
                         document.getElementById('enableNotifyBtn').style.display = 'none';
-                        alert("通知與音效已啟用！");
+                        alert("設定完成！計時時請勿關閉螢幕，系統會自動保持恆亮。");
                     }
                 });
             }
         }
 
-        // --- 原有邏輯 ---
+        // --- 防休眠機制 ---
+        let wakeLock = null;
+        async function requestWakeLock() {
+            // 方法1: 原生 API (Chrome/Safari 16.4+)
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) {
+                console.log(`${err.name}, ${err.message}`);
+            }
+            // 方法2: 影片 Hack (舊版 iOS)
+            video.play().catch(()=>{});
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+            video.pause();
+        }
+
+        // --- 核心邏輯 (與 V9 相同，加上 WakeLock 呼叫) ---
         const defaultData = {
             "胸": ["史密斯臥推", "啞鈴臥推", "史密斯上胸臥推", "上胸啞鈴臥推", "cable夾胸", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
             "背": ["引體向上", "滑輪下拉", "坐姿划船", "分動式下拉", "後三角飛鳥", "垂式彎舉", "二頭彎舉", "cable二頭彎舉", "W槓彎舉", "器械二頭彎舉"],
@@ -393,7 +425,7 @@
             loadExercises();       
             renderTodayLogs();
             renderHistoryLogs();
-            checkNotifyPermission(); // 檢查是否需要顯示通知按鈕
+            checkNotifyPermission(); 
         };
 
         function switchTab(tab) {
@@ -598,7 +630,10 @@
             updateTimerDisplay();
             document.getElementById('timer-modal').classList.add('active');
             
-            // 每次開始計時，都重新「解鎖」一下音效，確保背景能播放
+            // 啟動防休眠
+            requestWakeLock();
+
+            // 預熱音效
             dingSound.play().then(() => {
                  dingSound.pause();
                  dingSound.currentTime = 0;
@@ -616,7 +651,9 @@
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 document.getElementById('timerDisplay').textContent = "00:00";
-                triggerAlarm(); // 觸發通知與音效
+                triggerAlarm(); 
+                // 計時結束，允許休眠
+                releaseWakeLock();
                 hideTimer();
                 return;
             }
@@ -627,20 +664,15 @@
         }
 
         function triggerAlarm() {
-            // 1. 播放聲音
             try {
                 dingSound.volume = 1.0;
                 dingSound.play();
             } catch(e) { console.error("Sound play error", e); }
 
-            // 2. 發送通知
             if ("Notification" in window && Notification.permission === "granted") {
                 try {
-                    new Notification("休息結束！", {
-                        body: "Time to lift! 💪",
-                        requireInteraction: true // 嘗試讓通知停留在畫面上
-                    });
-                } catch(e) { console.error("Notify error", e); }
+                    new Notification("休息結束！", { body: "該下一組囉！💪" });
+                } catch(e) {}
             }
         }
 
@@ -657,6 +689,7 @@
         function hideTimer() {
             document.getElementById('timer-modal').classList.remove('active');
             clearInterval(timerInterval);
+            releaseWakeLock(); // 關閉視窗時也解除
         }
     </script>
 </body>
