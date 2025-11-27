@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>健身紀錄 V7 (歷史回顧)</title>
+    <title>健身紀錄 V9 (通知版)</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -24,14 +24,12 @@
             margin: 0;
             padding: 20px;
             color: var(--text-main);
-            padding-bottom: 100px; /* 留給底部導航 */
+            padding-bottom: 100px;
         }
 
-        /* 隱藏/顯示頁面的機制 */
         .page { display: none; }
         .page.active { display: block; }
 
-        /* 標題區塊 */
         .header {
             display: flex;
             justify-content: center;
@@ -53,7 +51,6 @@
             cursor: pointer;
         }
 
-        /* 卡片通用樣式 */
         .card {
             background: var(--card-bg);
             border-radius: 14px;
@@ -62,7 +59,6 @@
             border: 1px solid #333;
         }
 
-        /* 輸入框樣式 */
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
         
@@ -105,7 +101,6 @@
             justify-content: center;
         }
 
-        /* 按鈕樣式 */
         .btn-primary {
             background-color: var(--primary);
             color: white;
@@ -134,7 +129,6 @@
             box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3);
         }
 
-        /* 列表項目樣式 */
         .history-item {
             border-bottom: 1px solid var(--border);
             padding: 12px 0;
@@ -163,87 +157,56 @@
             cursor: pointer;
         }
 
-        /* 歷史頁面專用樣式 */
-        .date-section {
-            margin-bottom: 25px;
-        }
-        .date-header {
-            font-size: 14px;
-            color: var(--text-sub);
-            margin-bottom: 10px;
-            padding-left: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .volume-badge {
-            background: #333;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #fff;
-        }
-
-        .ghost-text {
-            font-size: 13px;
-            color: var(--primary);
-            margin-top: -10px;
-            margin-bottom: 12px;
-            height: 18px;
-            font-weight: 500;
-        }
-
-        .rest-input-container {
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            border-radius: 10px;
-        }
+        .date-section { margin-bottom: 25px; }
+        .date-header { font-size: 14px; color: var(--text-sub); margin-bottom: 10px; padding-left: 5px; display: flex; justify-content: space-between; }
+        .volume-badge { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
+        .ghost-text { font-size: 13px; color: var(--primary); margin-top: -10px; margin-bottom: 12px; height: 18px; font-weight: 500; }
+        .rest-input-container { margin-top: 10px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; }
         .rest-label { font-size: 14px; color: var(--text-sub); width: 80px; }
         .rest-input { text-align: center; font-weight: bold; color: var(--accent); padding: 8px !important; }
 
-        /* 底部導航列 */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 70px;
-            background: var(--nav-bg);
-            border-top: 1px solid #333;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 900;
-            padding-bottom: 10px; /* iPhone Home Bar 避讓 */
-            box-sizing: border-box;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: var(--nav-bg); border-top: 1px solid #333;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 900; padding-bottom: 10px; box-sizing: border-box;
         }
-        .nav-item {
-            color: #555;
-            font-size: 12px;
-            text-align: center;
-            width: 50%;
-            cursor: pointer;
-        }
+        .nav-item { color: #555; font-size: 12px; text-align: center; width: 50%; cursor: pointer; }
         .nav-item.active { color: var(--primary); }
         .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
 
-        /* 計時器 */
-        #timer-modal {
-            position: fixed;
-            bottom: -100%;
-            left: 0;
+        .export-btn {
+            background: #2C2C2E;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 10px;
             width: 100%;
-            background: #000;
-            border-top: 1px solid #333;
-            padding: 30px 20px 50px 20px;
-            border-radius: 20px 20px 0 0;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* 新增：通知按鈕 */
+        .notify-btn {
+            background: #FF9500;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            display: none; /* 預設隱藏，如果沒權限才顯示 */
+        }
+
+        #timer-modal {
+            position: fixed; bottom: -100%; left: 0; width: 100%;
+            background: #000; border-top: 1px solid #333;
+            padding: 30px 20px 50px 20px; border-radius: 20px 20px 0 0;
             transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-sizing: border-box;
-            text-align: center;
-            z-index: 1000;
+            box-sizing: border-box; text-align: center; z-index: 1000;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
         #timer-modal.active { bottom: 0; }
@@ -254,21 +217,23 @@
 </head>
 <body>
 
-    <!-- 頁面 1：訓練輸入 -->
     <div id="page-workout" class="page active">
         <div class="header">
             <h1>💪 WORKOUT</h1>
             <button class="fix-btn" onclick="forceReset()" title="修復選單">🔄</button>
         </div>
+        
+        <!-- 通知授權按鈕 -->
+        <button id="enableNotifyBtn" class="notify-btn" onclick="requestNotifyPermission()">🔔 點此啟用計時通知與音效</button>
 
         <div class="card">
             <div class="input-group">
                 <label>今天練哪裡？</label>
                 <select id="partSelect" onchange="loadExercises()">
-                    <option value="胸">胸 (Chest)</option>
-                    <option value="背">背 (Back)</option>
-                    <option value="肩">肩 (Shoulders)</option>
-                    <option value="腿">腿 (Legs)</option>
+                <option value="胸">胸 (Chest)</option>
+                <option value="背">背 (Back)</option>
+                <option value="腿">腿 (Legs)</option>
+                <option value="肩">肩 (Shoulders)</option>
                 </select>
             </div>
 
@@ -276,7 +241,6 @@
                 <label>選擇動作</label>
                 <div class="exercise-select-row">
                     <select id="exerciseSelect" onchange="handleExerciseChange()">
-                        <!-- 選單自動產生 -->
                     </select>
                     <button class="add-btn" onclick="addNewExercise()">+</button>
                 </div>
@@ -317,23 +281,19 @@
         </div>
 
         <button class="btn-finish" onclick="finishWorkout()">🎉 結束今日訓練</button>
-
-        <!-- 底部空間 -->
         <div style="height: 50px;"></div>
     </div>
 
-    <!-- 頁面 2：歷史紀錄 -->
     <div id="page-history" class="page">
         <div class="header">
             <h1>📅 歷史紀錄</h1>
         </div>
-        
-        <div id="historyListContainer" style="padding-bottom: 20px;">
-            <!-- 歷史紀錄會插在這裡 -->
+        <div style="padding: 0 10px;">
+            <button class="export-btn" onclick="downloadCSV()">📤 匯出資料到 Excel/Sheets</button>
         </div>
+        <div id="historyListContainer" style="padding-bottom: 20px; margin-top: 15px;"></div>
     </div>
 
-    <!-- 底部導航 -->
     <div class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('workout')" id="nav-workout">
             <span class="nav-icon">🏋️</span>
@@ -345,7 +305,6 @@
         </div>
     </div>
 
-    <!-- 計時器 -->
     <div id="timer-modal">
         <div class="close-timer" onclick="hideTimer()">✕</div>
         <div style="color:#888; font-size:14px;">REST TIME</div>
@@ -358,28 +317,57 @@
     </div>
 
     <script>
+        // --- 音效與通知系統 ---
+        // 內嵌一個短的 "Ding" 音效 (Base64)
+        const dingSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbQAAAA8AAAAEAAABvwAVFhcYGRscHR8gISIkJiYoKSstLi8wMjM0Njc4OTs8PT9AQUNERkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f4AAAAATGF2YzU4LjU0LjEwMAAAAAAAAAAAAAAA//uQZAAABi0vXuYQwAAAAANIAAAABO1F3mU8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABh0vW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABF0vXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABi0vW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAACBERF3mU8wAAAA0gAAAAEZUXeZTzAAAADSAAAAQAAAGkAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/8zEAAAAA1QAAAAEAAAAB");
+        
+        function checkNotifyPermission() {
+            if ("Notification" in window) {
+                if (Notification.permission === 'default') {
+                    document.getElementById('enableNotifyBtn').style.display = 'block';
+                }
+            }
+        }
+
+        function requestNotifyPermission() {
+            // 嘗試播放一次聲音以「解鎖」iOS 自動播放限制
+            dingSound.volume = 0.1;
+            dingSound.play().then(() => {
+                dingSound.pause();
+                dingSound.currentTime = 0;
+                dingSound.volume = 1.0;
+            }).catch(e => console.log("Audio unlock failed", e));
+
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        document.getElementById('enableNotifyBtn').style.display = 'none';
+                        alert("通知與音效已啟用！");
+                    }
+                });
+            }
+        }
+
+        // --- 原有邏輯 ---
         const defaultData = {
             "胸": ["史密斯臥推", "啞鈴臥推", "史密斯上胸臥推", "上胸啞鈴臥推", "cable夾胸", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
             "背": ["引體向上", "滑輪下拉", "坐姿划船", "分動式下拉", "後三角飛鳥", "垂式彎舉", "二頭彎舉", "cable二頭彎舉", "W槓彎舉", "器械二頭彎舉"],
-            "肩": ["槓鈴肩推", "啞鈴肩推", "啞鈴側平舉", "cable側平舉", "cable前平舉", "後三角飛鳥", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
             "腿": ["深蹲", "史密斯深蹲", "器械腿推", "腿伸展", "腿後勾"],
+            "肩": ["槓鈴肩推", "啞鈴肩推", "啞鈴側平舉", "cable側平舉", "cable前平舉", "後三角飛鳥", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
         };
 
         let exerciseDB;
         let logs = JSON.parse(localStorage.getItem('gymLogs')) || [];
         let restDB = JSON.parse(localStorage.getItem('restDB')) || {};
 
-        // --- 初始化與資料庫修復 ---
         function initDB() {
             let saved;
             try { saved = JSON.parse(localStorage.getItem('exerciseDB')); } catch(e) { saved = null; }
-
             if (!saved || typeof saved !== 'object' || Array.isArray(saved)) {
                 const newData = JSON.parse(JSON.stringify(defaultData));
                 localStorage.setItem('exerciseDB', JSON.stringify(newData));
                 return newData;
             }
-
             let isFixed = false;
             for (let key in defaultData) {
                 if (!saved[key] || !Array.isArray(saved[key]) || saved[key].length === 0) {
@@ -392,11 +380,11 @@
         }
 
         function forceReset() {
-            if(confirm("選單看不到嗎？按「確定」將強制重置選單 (不會刪除紀錄)。")) {
+            if(confirm("重置選單？")) {
                 localStorage.removeItem('exerciseDB');
                 exerciseDB = initDB();
                 loadExercises();
-                alert("已修復完成！");
+                alert("已修復");
             }
         }
 
@@ -405,45 +393,31 @@
             loadExercises();       
             renderTodayLogs();
             renderHistoryLogs();
+            checkNotifyPermission(); // 檢查是否需要顯示通知按鈕
         };
 
-        // --- 頁面切換 ---
         function switchTab(tab) {
             document.getElementById('page-workout').classList.remove('active');
             document.getElementById('page-history').classList.remove('active');
             document.getElementById('nav-workout').classList.remove('active');
             document.getElementById('nav-history').classList.remove('active');
-
             document.getElementById('page-' + tab).classList.add('active');
             document.getElementById('nav-' + tab).classList.add('active');
-
-            if (tab === 'history') {
-                renderHistoryLogs(); // 切換過去時更新一下
-            }
+            if (tab === 'history') renderHistoryLogs(); 
         }
 
         function finishWorkout() {
             const today = new Date().toLocaleDateString();
             const todayCount = logs.filter(l => l.date === today).length;
-            
-            if (todayCount === 0) {
-                alert("今天還沒訓練喔，快去舉幾下！");
-                return;
-            }
-
-            alert(`辛苦了！今天完成了 ${todayCount} 組訓練！🎉`);
-            switchTab('history'); // 跳轉到歷史頁面
+            if (todayCount === 0) { alert("今天還沒訓練喔！"); return; }
+            alert(`完成！今日 ${todayCount} 組訓練！`);
+            switchTab('history'); 
         }
 
-        // --- 動作與輸入邏輯 ---
         function loadExercises() {
             const part = document.getElementById('partSelect').value;
-            let list = exerciseDB[part];
-            // 防呆
-            if (!list || list.length === 0) {
-                list = defaultData[part];
-                exerciseDB[part] = list;
-            }
+            let list = exerciseDB[part] || defaultData[part];
+            exerciseDB[part] = list;
             const select = document.getElementById('exerciseSelect');
             select.innerHTML = ""; 
             list.forEach(ex => {
@@ -464,7 +438,7 @@
 
         function addNewExercise() {
             const part = document.getElementById('partSelect').value;
-            const newEx = prompt(`新增動作到「${part}」類別：`);
+            const newEx = prompt(`新增動作到「${part}」：`);
             if (newEx) {
                 if (!exerciseDB[part]) exerciseDB[part] = [];
                 exerciseDB[part].push(newEx);
@@ -479,9 +453,6 @@
             const name = document.getElementById('exerciseSelect').value;
             const hint = document.getElementById('lastRecordHint');
             if (!name) { hint.textContent = ""; return; }
-            
-            // 找出過去的紀錄 (排除今天的，如果你希望今天也算最新，就拿掉filter)
-            // 這裡邏輯：顯示最新的紀錄，不管是不是今天的
             const history = logs.filter(l => l.name === name);
             if (history.length > 0) {
                 const last = history[0]; 
@@ -511,7 +482,6 @@
             
             logs.unshift(newLog); 
             localStorage.setItem('gymLogs', JSON.stringify(logs));
-
             restDB[name] = restTime;
             localStorage.setItem('restDB', JSON.stringify(restDB));
 
@@ -525,21 +495,18 @@
             logs = logs.filter(log => log.id !== id);
             localStorage.setItem('gymLogs', JSON.stringify(logs));
             renderTodayLogs();
-            renderHistoryLogs(); // 同步更新歷史頁
+            renderHistoryLogs(); 
             checkHistory();
         }
 
-        // --- 顯示邏輯：今日列表 ---
         function renderTodayLogs() {
             const list = document.getElementById('todayList');
             const today = new Date().toLocaleDateString();
             const todayLogs = logs.filter(l => l.date === today);
-
             if (todayLogs.length === 0) {
                 list.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:14px;">Let\'s go! 開始訓練</div>';
                 return;
             }
-
             list.innerHTML = todayLogs.map(log => createLogHTML(log, true)).join('');
         }
 
@@ -553,33 +520,23 @@
             }
         }
 
-        // --- 顯示邏輯：歷史頁面 (日期分組) ---
         function renderHistoryLogs() {
             const container = document.getElementById('historyListContainer');
             if (logs.length === 0) {
                 container.innerHTML = '<div style="text-align:center; padding:40px; color:#555;">尚未有歷史紀錄</div>';
                 return;
             }
-
-            // 1. 依照日期分組
             const grouped = {};
             logs.forEach(log => {
                 if (!grouped[log.date]) grouped[log.date] = [];
                 grouped[log.date].push(log);
             });
-
-            // 2. 排序日期 (最新的在前面)
-            // 因為 date string 格式不一定好排序，這裡用簡單的 string 比較 (2023/11/26 > 2023/11/25)
-            // 如果跨年份格式不同可能需要轉 Date 物件，這裡假設toLocaleDateString格式一致
             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
-
-            // 3. 產生 HTML
             let html = '';
             sortedDates.forEach(date => {
                 const dayLogs = grouped[date];
                 const isToday = date === new Date().toLocaleDateString();
                 const displayDate = isToday ? `${date} (今日)` : date;
-                
                 html += `
                     <div class="card date-section">
                         <div class="date-header">
@@ -590,15 +547,12 @@
                     </div>
                 `;
             });
-
             container.innerHTML = html;
         }
 
-        // 通用的 HTML 產生器
         function createLogHTML(log, showDelete) {
             const deleteBtn = showDelete ? 
                 `<button class="delete-btn" onclick="deleteLog(${log.id})">✕</button>` : '';
-            
             return `
                 <div class="history-item">
                     <div class="history-info">
@@ -617,47 +571,92 @@
             `;
         }
 
+        function downloadCSV() {
+            if (logs.length === 0) { alert("沒有資料"); return; }
+            let csvContent = "\uFEFF日期,部位,動作名稱,重量,次數\n";
+            logs.forEach(log => {
+                csvContent += `${log.date},${log.part},${log.name},${log.weight},${log.reps}\n`;
+            });
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "gym_backup.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // --- 計時器邏輯 ---
         let timerInterval;
-        let secondsLeft = 0;
-        let currentDefault = 90;
+        let timerTargetTime; 
+        let originalDuration;
 
         function startTimer(seconds) {
             clearInterval(timerInterval);
-            secondsLeft = seconds;
-            currentDefault = seconds;
-            updateDisplay();
+            originalDuration = seconds;
+            timerTargetTime = Date.now() + (seconds * 1000);
+            updateTimerDisplay();
             document.getElementById('timer-modal').classList.add('active');
             
+            // 每次開始計時，都重新「解鎖」一下音效，確保背景能播放
+            dingSound.play().then(() => {
+                 dingSound.pause();
+                 dingSound.currentTime = 0;
+            }).catch(() => {});
+
             timerInterval = setInterval(() => {
-                secondsLeft--;
-                updateDisplay();
-                if (secondsLeft <= 0) {
-                    clearInterval(timerInterval);
-                    hideTimer();
-                }
-            }, 1000);
+                updateTimerDisplay();
+            }, 500);
         }
 
-        function updateDisplay() {
-            const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
-            const s = (secondsLeft % 60).toString().padStart(2, '0');
+        function updateTimerDisplay() {
+            const now = Date.now();
+            const timeLeft = Math.ceil((timerTargetTime - now) / 1000);
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('timerDisplay').textContent = "00:00";
+                triggerAlarm(); // 觸發通知與音效
+                hideTimer();
+                return;
+            }
+
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
             document.getElementById('timerDisplay').textContent = `${m}:${s}`;
         }
 
+        function triggerAlarm() {
+            // 1. 播放聲音
+            try {
+                dingSound.volume = 1.0;
+                dingSound.play();
+            } catch(e) { console.error("Sound play error", e); }
+
+            // 2. 發送通知
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification("休息結束！", {
+                        body: "Time to lift! 💪",
+                        requireInteraction: true // 嘗試讓通知停留在畫面上
+                    });
+                } catch(e) { console.error("Notify error", e); }
+            }
+        }
+
         function adjustTimer(val) {
-            secondsLeft += val;
-            if (secondsLeft < 0) secondsLeft = 0;
-            updateDisplay();
+            timerTargetTime += (val * 1000);
+            updateTimerDisplay();
         }
 
         function resetTimer() {
-            secondsLeft = currentDefault;
-            updateDisplay();
+            timerTargetTime = Date.now() + (originalDuration * 1000);
+            updateTimerDisplay();
         }
 
         function hideTimer() {
             document.getElementById('timer-modal').classList.remove('active');
+            clearInterval(timerInterval);
         }
     </script>
 </body>
