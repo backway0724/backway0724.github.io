@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>健身紀錄 V10 (防休眠版)</title>
+    <title>健身紀錄</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -35,7 +35,7 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         h1 { font-size: 22px; margin: 0; color: var(--text-main); letter-spacing: 1px;}
         .fix-btn {
@@ -51,6 +51,38 @@
             cursor: pointer;
         }
 
+        /* --- 新增：總時長計時器樣式 --- */
+        .global-timer-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .start-workout-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(10, 132, 255, 0.4);
+            transition: transform 0.1s;
+        }
+        .start-workout-btn:active { transform: scale(0.95); }
+        
+        .timer-running-badge {
+            display: inline-block;
+            background: #333;
+            color: var(--accent);
+            padding: 8px 20px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: monospace; /* 等寬字體像電子鐘 */
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+        }
+
+        /* 卡片 */
         .card {
             background: var(--card-bg);
             border-radius: 14px;
@@ -213,10 +245,7 @@
         .timer-btn { background: #333; color: white; border: none; padding: 12px 24px; border-radius: 25px; margin: 0 5px; font-size: 16px; }
         .close-timer { position: absolute; top: 20px; right: 20px; font-size: 24px; color: var(--text-sub); padding: 10px; }
         
-        /* 隱藏的影片播放器，用於防休眠 */
-        #wakeLockVideo {
-            width: 1px; height: 1px; opacity: 0; position: absolute; top: 0; left: 0; pointer-events: none;
-        }
+        #wakeLockVideo { width: 1px; height: 1px; opacity: 0; position: absolute; top: 0; left: 0; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -227,9 +256,14 @@
             <button class="fix-btn" onclick="forceReset()" title="修復選單">🔄</button>
         </div>
         
-        <button id="enableNotifyBtn" class="notify-btn" onclick="requestNotifyPermission()">🔔 點此啟用計時通知與防休眠</button>
+        <!-- 新增：總時長計時器 -->
+        <div class="global-timer-container" id="globalTimerContainer">
+            <!-- 預設顯示按鈕，開始後會變成數字 -->
+            <button class="start-workout-btn" onclick="startWorkout()">▶️ 開始訓練</button>
+        </div>
 
-        <!-- 防休眠影片 Hack -->
+        <button id="enableNotifyBtn" class="notify-btn" onclick="requestNotifyPermission()">🔔 點此啟用休息計時通知</button>
+
         <video id="wakeLockVideo" loop playsinline muted>
             <source src="data:video/mp4;base64,AAAAHGZ0eXBNNGEgAAAAAE00QSAgMQAAAAAAHgAAAC5tb292AAAAbG12aGQAAAAAzaNnZM2jZ2QAAQAAAQAAAAAAAAAAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhdHJhawAAAFx0a2hkAAAAAdmjZ2TNo2dkAAAAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAAQAAAAABAAAAAAABAAAAAAhobWRoZAABAAAAAAACLP5oZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAQlBQUAAAAAAxAAAACG1pbmYAAAAQc21oZAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABVHN0YmwAAABTc3RzZAAAAAAAAAABAAAAR21wNGEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAEAAAAAEAAQAAAAAAAAAAAAAAH3R0c2MAAAAAAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAQc3RzeHXXXXXXXXXXAAACAAAAABhzdHN6AAAAAAAAAAAAAAABAAAAAgAAABRzdGNvAAAAAAAAAAEAAAQwAAAAYXVkdGEAAAA1bWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpYQAAAAAAAAAAAAAAAAAAAAA6aWxzdAAAACWpdG9vAAAAHWRhdGEAAAAAQW5kcm9pZCBWZXJzaW9uIDEyAA==" type="video/mp4">
         </video>
@@ -238,10 +272,10 @@
             <div class="input-group">
                 <label>今天練哪裡？</label>
                 <select id="partSelect" onchange="loadExercises()">
-                <option value="胸">胸 (Chest)</option>
-                <option value="背">背 (Back)</option>
-                <option value="腿">腿 (Legs)</option>
-                <option value="肩">肩 (Shoulders)</option>
+                    <option value="胸">胸 (Chest)</option>
+                    <option value="背">背 (Back)</option>
+                    <option value="腿">腿 (Legs)</option>
+                    <option value="肩">肩 (Shoulders)</option>
                 </select>
             </div>
 
@@ -329,58 +363,108 @@
         const dingSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbQAAAA8AAAAEAAABvwAVFhcYGRscHR8gISIkJiYoKSstLi8wMjM0Njc4OTs8PT9AQUNERkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f4AAAAATGF2YzU4LjU0LjEwMAAAAAAAAAAAAAAA//uQZAAABi0vXuYQwAAAAANIAAAABO1F3mU8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABh0vW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABF0vXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABi0vW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABGkvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABiEvW8YQwAAAAANIAAAABFEvXcY8wAAAA0gAAAAEAAABpAAAAGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAACBERF3mU8wAAAA0gAAAAEZUXeZTzAAAADSAAAAQAAAGkAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/8zEAAAAA1QAAAAEAAAAB");
         const video = document.getElementById("wakeLockVideo");
 
-        // 檢查權限
+        // --- 總訓練計時器邏輯 ---
+        let globalTimerInterval;
+
+        function startWorkout() {
+            // 設定開始時間 (如果沒有的話)
+            if (!localStorage.getItem('workoutStartTime')) {
+                localStorage.setItem('workoutStartTime', Date.now());
+            }
+            updateGlobalTimerDisplay();
+        }
+
+        function updateGlobalTimerDisplay() {
+            const startTime = localStorage.getItem('workoutStartTime');
+            const container = document.getElementById('globalTimerContainer');
+            
+            // 如果沒有開始時間，顯示開始按鈕
+            if (!startTime) {
+                container.innerHTML = `<button class="start-workout-btn" onclick="startWorkout()">▶️ 開始訓練</button>`;
+                clearInterval(globalTimerInterval);
+                return;
+            }
+
+            // 如果有開始時間，啟動計時器介面
+            if (!globalTimerInterval) {
+                globalTimerInterval = setInterval(updateGlobalTimerDisplay, 1000);
+            }
+
+            const diff = Date.now() - parseInt(startTime);
+            const totalSeconds = Math.floor(diff / 1000);
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            
+            const hStr = h > 0 ? h + ':' : ''; // 如果沒超過1小時就不顯示小時
+            const mStr = m.toString().padStart(2, '0');
+            const sStr = s.toString().padStart(2, '0');
+
+            container.innerHTML = `<div class="timer-running-badge">⏱️ ${hStr}${mStr}:${sStr}</div>`;
+        }
+
+        // 修改後的結束訓練 (整合計時器)
+        function finishWorkout() {
+            const today = new Date().toLocaleDateString();
+            const todayCount = logs.filter(l => l.date === today).length;
+            
+            if (todayCount === 0 && !localStorage.getItem('workoutStartTime')) { 
+                alert("今天還沒開始訓練喔！"); 
+                return; 
+            }
+
+            // 計算總時間
+            let durationMsg = "";
+            const startTime = localStorage.getItem('workoutStartTime');
+            if (startTime) {
+                const diff = Date.now() - parseInt(startTime);
+                const totalMinutes = Math.floor(diff / 1000 / 60);
+                const h = Math.floor(totalMinutes / 60);
+                const m = totalMinutes % 60;
+                durationMsg = `\n⏱️ 總訓練時長：${h}小時 ${m}分鐘`;
+            }
+
+            // 顯示結算
+            alert(`🎉 辛苦了！\n🏋️ 今日組數：${todayCount} 組${durationMsg}`);
+            
+            // 清除計時器
+            localStorage.removeItem('workoutStartTime');
+            clearInterval(globalTimerInterval);
+            globalTimerInterval = null;
+            updateGlobalTimerDisplay(); // 恢復成按鈕
+
+            switchTab('history'); 
+        }
+
+        // --- 以下為原有核心邏輯 (無變動) ---
         function checkNotifyPermission() {
             if ("Notification" in window && Notification.permission === 'default') {
                 document.getElementById('enableNotifyBtn').style.display = 'block';
             }
         }
-
-        // 請求通知與初始化音效
         function requestNotifyPermission() {
-            // 初始化音效 (解除 iOS 自動播放限制)
             dingSound.volume = 0.1;
-            dingSound.play().then(() => {
-                dingSound.pause();
-                dingSound.currentTime = 0;
-            }).catch(e => console.log("Audio init fail", e));
-
-            // 初始化防休眠影片
-            video.play().then(() => {
-                video.pause();
-            }).catch(e => console.log("Video init fail", e));
-
+            dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; }).catch(()=>{});
+            video.play().then(() => { video.pause(); }).catch(()=>{});
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
                         document.getElementById('enableNotifyBtn').style.display = 'none';
-                        alert("設定完成！計時時請勿關閉螢幕，系統會自動保持恆亮。");
+                        alert("設定完成！");
                     }
                 });
             }
         }
-
-        // --- 防休眠機制 ---
         let wakeLock = null;
         async function requestWakeLock() {
-            // 方法1: 原生 API (Chrome/Safari 16.4+)
-            try {
-                wakeLock = await navigator.wakeLock.request('screen');
-            } catch (err) {
-                console.log(`${err.name}, ${err.message}`);
-            }
-            // 方法2: 影片 Hack (舊版 iOS)
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             video.play().catch(()=>{});
         }
-
         function releaseWakeLock() {
-            if (wakeLock !== null) {
-                wakeLock.release().then(() => { wakeLock = null; });
-            }
+            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
             video.pause();
         }
 
-        // --- 核心邏輯 (與 V9 相同，加上 WakeLock 呼叫) ---
         const defaultData = {
             "胸": ["史密斯臥推", "啞鈴臥推", "史密斯上胸臥推", "上胸啞鈴臥推", "cable夾胸", "三頭滑輪下壓", "三頭滑輪過頭伸展", "(單邊)三頭滑輪下壓", "器械三頭伸展"],
             "背": ["引體向上", "滑輪下拉", "坐姿划船", "分動式下拉", "後三角飛鳥", "垂式彎舉", "二頭彎舉", "cable二頭彎舉", "W槓彎舉", "器械二頭彎舉"],
@@ -426,6 +510,8 @@
             renderTodayLogs();
             renderHistoryLogs();
             checkNotifyPermission(); 
+            // 檢查是否正在訓練中，如果是，恢復計時器顯示
+            updateGlobalTimerDisplay();
         };
 
         function switchTab(tab) {
@@ -436,14 +522,6 @@
             document.getElementById('page-' + tab).classList.add('active');
             document.getElementById('nav-' + tab).classList.add('active');
             if (tab === 'history') renderHistoryLogs(); 
-        }
-
-        function finishWorkout() {
-            const today = new Date().toLocaleDateString();
-            const todayCount = logs.filter(l => l.date === today).length;
-            if (todayCount === 0) { alert("今天還沒訓練喔！"); return; }
-            alert(`完成！今日 ${todayCount} 組訓練！`);
-            switchTab('history'); 
         }
 
         function loadExercises() {
@@ -495,6 +573,11 @@
         }
 
         function saveLog() {
+            // 如果還沒開始計時，自動開始 (貼心功能)
+            if (!localStorage.getItem('workoutStartTime')) {
+                startWorkout();
+            }
+
             const part = document.getElementById('partSelect').value;
             const name = document.getElementById('exerciseSelect').value;
             const weight = document.getElementById('weight').value;
@@ -618,7 +701,6 @@
             document.body.removeChild(link);
         }
 
-        // --- 計時器邏輯 ---
         let timerInterval;
         let timerTargetTime; 
         let originalDuration;
@@ -629,68 +711,36 @@
             timerTargetTime = Date.now() + (seconds * 1000);
             updateTimerDisplay();
             document.getElementById('timer-modal').classList.add('active');
-            
-            // 啟動防休眠
             requestWakeLock();
-
-            // 預熱音效
-            dingSound.play().then(() => {
-                 dingSound.pause();
-                 dingSound.currentTime = 0;
-            }).catch(() => {});
-
-            timerInterval = setInterval(() => {
-                updateTimerDisplay();
-            }, 500);
+            dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; }).catch(() => {});
+            timerInterval = setInterval(() => { updateTimerDisplay(); }, 500);
         }
 
         function updateTimerDisplay() {
             const now = Date.now();
             const timeLeft = Math.ceil((timerTargetTime - now) / 1000);
-
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 document.getElementById('timerDisplay').textContent = "00:00";
                 triggerAlarm(); 
-                // 計時結束，允許休眠
                 releaseWakeLock();
                 hideTimer();
                 return;
             }
-
             const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
             const s = (timeLeft % 60).toString().padStart(2, '0');
             document.getElementById('timerDisplay').textContent = `${m}:${s}`;
         }
 
         function triggerAlarm() {
-            try {
-                dingSound.volume = 1.0;
-                dingSound.play();
-            } catch(e) { console.error("Sound play error", e); }
-
+            try { dingSound.volume = 1.0; dingSound.play(); } catch(e) {}
             if ("Notification" in window && Notification.permission === "granted") {
-                try {
-                    new Notification("休息結束！", { body: "該下一組囉！💪" });
-                } catch(e) {}
+                try { new Notification("休息結束！", { body: "該下一組囉！💪" }); } catch(e) {}
             }
         }
-
-        function adjustTimer(val) {
-            timerTargetTime += (val * 1000);
-            updateTimerDisplay();
-        }
-
-        function resetTimer() {
-            timerTargetTime = Date.now() + (originalDuration * 1000);
-            updateTimerDisplay();
-        }
-
-        function hideTimer() {
-            document.getElementById('timer-modal').classList.remove('active');
-            clearInterval(timerInterval);
-            releaseWakeLock(); // 關閉視窗時也解除
-        }
+        function adjustTimer(val) { timerTargetTime += (val * 1000); updateTimerDisplay(); }
+        function resetTimer() { timerTargetTime = Date.now() + (originalDuration * 1000); updateTimerDisplay(); }
+        function hideTimer() { document.getElementById('timer-modal').classList.remove('active'); clearInterval(timerInterval); releaseWakeLock(); }
     </script>
 </body>
 </html>
